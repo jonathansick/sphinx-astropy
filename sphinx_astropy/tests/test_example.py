@@ -12,13 +12,17 @@ pytest.importorskip("sphinx", minversion="1.7")  # noqa E402
 
 from sphinx.testing.util import etree_parse
 from sphinx.util import logging
+from sphinx.util.docutils import is_node_registered, is_directive_registered
 from sphinx.errors import SphinxError
 from sphinx.cmd.build import build_main
 
 from sphinx_astropy.ext.example import purge_examples, merge_examples
 from sphinx_astropy.ext.example.marker import (
     format_title_to_example_id, format_title_to_source_ref_id)
-from sphinx_astropy.ext.example.preprocessor import detect_examples
+from sphinx_astropy.ext.example.preprocessor import (
+    detect_examples, preprocess_example_pages)
+from sphinx_astropy.ext.example.examplepages import (
+    process_pending_example_nodes, pending_example)
 
 
 @pytest.mark.parametrize(
@@ -166,9 +170,28 @@ def test_purge_examples(app, status, warning):
 
 
 @pytest.mark.sphinx('dummy', testroot='example-gallery')
-def test_event_connections(app, status, warning):
-    assert purge_examples in app.events.listeners['env-purge-doc'].values()
-    assert merge_examples in app.events.listeners['env-merge-info'].values()
+def test_app_setup(app, status, warning):
+    """Test that event callbacks, directives, and nodes got added to the
+    Sphinx app.
+    """
+    # Check event callbacks
+    listeners = app.events.listeners
+    assert purge_examples in listeners['env-purge-doc'].values()
+    assert merge_examples in listeners['env-merge-info'].values()
+    assert preprocess_example_pages in listeners['builder-inited'].values()
+    assert process_pending_example_nodes in listeners['doctree-resolved'].values()
+
+    # Check nodes
+    assert is_node_registered(pending_example)
+
+    # Check directives
+    directive_names = ['example', 'example-content']
+    for directive_name in directive_names:
+        assert is_directive_registered(directive_name)
+
+    # Check registered config
+    assert 'astropy_examples_dir' in app.config
+    assert 'astropy_examples_h1' in app.config
 
 
 def test_parallel_reads(tmpdir, rootdir):
@@ -229,3 +252,26 @@ def test_detect_examples(app, status, warning):
 
     assert examples[3]['title'] == 'Example with subsections'
     assert examples[3]['tags'] == set(['tag-b'])
+
+
+@pytest.mark.sphinx('dummy', testroot='example-gallery')
+def test_generated_example_pages(app, status, warning):
+    """Test that example pages got generated.
+    """
+    app.verbosity = 2
+    logging.setup(app, status, warning)
+    app.builder.build_all()
+
+    examples_dir = app.config.astropy_examples_dir
+
+    # These examples come from example-marker.rst
+    expected_docnames = [
+        'example-with-two-paragraphs',
+        'tagged-example',
+        'example-with-multiple-tags',
+        'example-with-subsections'
+    ]
+    expected_docnames = [os.path.join(examples_dir, n)
+                         for n in expected_docnames]
+    for n in expected_docnames:
+        assert n in app.env.found_docs

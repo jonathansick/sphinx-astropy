@@ -11,6 +11,9 @@ __all__ = ('setup',)
 from pkg_resources import get_distribution
 
 from .marker import ExampleMarkerDirective, purge_examples, merge_examples
+from .preprocessor import preprocess_example_pages
+from .examplepages import (ExampleContentDirective,
+                           process_pending_example_nodes, pending_example)
 
 
 def setup(app):
@@ -28,9 +31,20 @@ def setup(app):
         http://www.sphinx-doc.org/en/master/extdev/index.html#extension-metadata
         for more information.
     """
+    app.add_node(pending_example)
     app.add_directive('example', ExampleMarkerDirective)
+    app.add_directive('example-content', ExampleContentDirective)
+    app.connect('builder-inited', preprocess_example_pages)
     app.connect('env-purge-doc', purge_examples)
     app.connect('env-merge-info', merge_examples)
+    app.connect('doctree-resolved', process_pending_example_nodes)
+
+    # Configures the directory, relative to the documentation source root,
+    # where example pages are created.
+    app.add_config_value('astropy_examples_dir', 'examples', 'env')
+
+    # Configures the character to use for h1 underlines in rst
+    app.add_config_value('astropy_examples_h1', '#', 'env')
 
     return {'version': get_distribution('sphinx_astropy').version,
             # env_version needs to be incremented when the persisted data
