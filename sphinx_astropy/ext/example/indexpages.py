@@ -28,6 +28,10 @@ def generate_landing_page(examples, dirname, h1header, taginfo):
     # Generate the hidden toctree contents
     toctree_items = ['   {}'.format(example['docname'])
                      for example in examples]
+    tagnames = sorted(taginfo.keys())
+    toctree_items.extend(
+        ['   {}'.format(taginfo[t]['abs_docname']) for t in tagnames]
+    )
 
     example_list_items = [format_example_item(example, taginfo)
                           for example in examples]
