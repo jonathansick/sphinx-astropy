@@ -41,6 +41,10 @@ def preprocess_example_pages(app):
     examples_dir = os.path.join(app.srcdir, app.config.astropy_examples_dir)
     os.makedirs(examples_dir, exist_ok=True)
 
+    tags_dir = os.path.join(app.config.astropy_examples_dir, 'tags')
+    abs_tagsdir = os.path.join(app.srcdir, tags_dir)
+    os.makedirs(abs_tagsdir, exist_ok=True)
+
     # Add extensions to the docnames to generate relative paths
     found_files = []
     for docname in env.found_docs:
@@ -66,6 +70,21 @@ def preprocess_example_pages(app):
 
     # Alphabetically sort examples
     found_examples.sort(key=lambda x: x['title'])
+
+    # Pre compute information about tags
+    all_tags = set()
+    for example in found_examples:
+        all_tags.update(example['tags'])
+    tags = {}
+    for tagname in all_tags:
+        filepath = os.path.join(abs_tagsdir, tagname + '.rst')
+        abs_docname = '/' + os.path.join(tags_dir, tagname)
+        tags[tagname] = {
+            'tag': tagname,
+            'filepath': filepath,
+            'docname': tagname,
+            'abs_docname': abs_docname
+        }
 
     for example in found_examples:
         logger.debug('[sphinx_astropy] Creating a page for example "%s"',
