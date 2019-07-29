@@ -9,7 +9,7 @@ from sphinx.util.logging import getLogger
 
 from .marker import format_title_to_example_id
 from .examplepages import generate_example_page
-from .indexpages import generate_landing_page
+from .indexpages import generate_landing_page, generate_tag_page
 
 
 EXAMPLE_PATTERN = re.compile(
@@ -95,6 +95,16 @@ def preprocess_example_pages(app):
                               example_id=example['example_id'],
                               filepath=example['filepath'],
                               h1header=app.config.astropy_examples_h1)
+
+    # Generate a page for each tag
+    for tagname, info in tags.items():
+        print(tagname, info)
+        generate_tag_page(
+            tagname=tagname,
+            filepath=info['filepath'],
+            examples=found_examples,
+            h1header=app.config.astropy_examples_h1,
+            taginfo=tags)
 
     logger.debug('[sphinx_astropy] Creating examples landing page')
     generate_landing_page(
