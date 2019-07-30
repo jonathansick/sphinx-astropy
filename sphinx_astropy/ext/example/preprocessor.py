@@ -95,7 +95,8 @@ def preprocess_example_pages(app):
                               example_id=example['example_id'],
                               filepath=example['filepath'],
                               h1header=app.config.astropy_examples_h1,
-                              taginfo=tags)
+                              taginfo=tags,
+                              src_docname=example['src_docname'])
 
     # Generate a page for each tag
     for tagname, info in tags.items():
