@@ -28,6 +28,10 @@ Title
 =====
 
 Just a test
+
+.. toctree::
+
+    examples/index
 """
 
 
